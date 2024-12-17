@@ -4,6 +4,5 @@ yt-dlp==2024.12.13
 flask==3.1.0
 google-generativeai==0.8.3
 ffmpeg-python==0.2.0
-tgcalls==2.0.0
 pyaes==1.6.1
 pysocks==1.7.1
