@@ -6,4 +6,4 @@ google-generativeai==0.8.3
 ffmpeg-python==0.2.0
 pyaes==1.6.1
 pysocks==1.7.1
-tgcalls==3.0.0.dev6
+tgcalls==3.0.0.dev2
