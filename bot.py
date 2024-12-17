@@ -1,7 +1,7 @@
 from flask import Flask
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from pytgcalls import PyTgCalls, InputAudioStream
+from py-tgcalls import PyTgCalls, InputAudioStream
 import yt_dlp
 import google.generativeai as genai
 import os
