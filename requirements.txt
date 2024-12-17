@@ -15,3 +15,5 @@ blinker==1.6.2
 jinja2==3.1.2
 itsdangerous==2.1.2
 opencv-python==4.8.0.76
+numpy==1.26.0
+TgCrypto==1.2.3
