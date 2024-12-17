@@ -1,7 +1,7 @@
 from flask import Flask
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from pytgcalls import PyTgCalls, InputAudioStream
+from pytgcalls import GroupCallFactory, InputAudioStream
 import yt_dlp
 import google.generativeai as genai
 import os
@@ -21,7 +21,7 @@ def index():
 
 # Initialize Pyrogram Bot and PyTgCalls for VC
 bot = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
-vc_client = PyTgCalls(bot)
+vc_client = GroupCallFactory(bot).get_group_call()
 
 # Configure Google Generative AI
 genai.configure(api_key="AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4")
