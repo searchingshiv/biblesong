@@ -1,8 +1,7 @@
 from flask import Flask
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from pytgcalls import PyTgCalls
-from pytgcalls.types.input_stream import InputAudioStream
+from pytgcalls import PyTgCalls, InputAudioStream
 import yt_dlp
 import google.generativeai as genai
 import os
@@ -51,7 +50,7 @@ def get_youtube_audio_url(search_query):
         return info["entries"][0]["url"], info["entries"][0]["title"]
 
 # Function to download YouTube audio
-def download_audio(audio_url, output_file="song.mp3"):
+def download_audio(audio_url, output_file="song.raw"):
     ydl_opts = {
         "format": "bestaudio",
         "outtmpl": output_file,
@@ -108,8 +107,8 @@ async def respond_to_feeling(client, message: Message):
         if MODE == "file":
             # Send audio file mode
             download_audio(audio_url)
-            await message.reply_audio("song.mp3", caption=f"Here’s your song: **{title}**\n\n**Lyrics:**\n{lyrics}")
-            os.remove("song.mp3")  # Clean up the file after sending
+            await message.reply_audio("song.raw", caption=f"Here’s your song: **{title}**\n\n**Lyrics:**\n{lyrics}")
+            os.remove("song.raw")  # Clean up the file after sending
 
         elif MODE == "vc":
             # Play in VC mode
