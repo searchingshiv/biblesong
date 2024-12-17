@@ -8,3 +8,5 @@ ffmpeg-python==0.2.0
 pyaes==1.6.1
 pysocks==1.7.1
 werkzeug==2.3.7
+requests==2.31.0
+markupsafe==2.1.3
