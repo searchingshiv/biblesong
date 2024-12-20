@@ -6,7 +6,7 @@ from google.generativeai import configure, GenerativeModel
 # Bot Configuration
 API_ID = os.getenv("API_ID", "25833520")
 API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAGepURB3e243eeOVDnDk2h6pPPLIO9C2o8")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAG13LY43DJnAp51TtlXUlivuuh76lu2H7E")
 
 # Initialize Google Generative AI
 configure(api_key=os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4"))
