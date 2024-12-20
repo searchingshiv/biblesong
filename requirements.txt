@@ -1,4 +1,4 @@
 pyrogram==2.0.106
 yt-dlp==2023.10.07
-google-generativeai==1.5.0
+google-generativeai
 ffmpeg-python==0.2.0
