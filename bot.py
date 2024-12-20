@@ -18,7 +18,7 @@ MODE = "file"  # Default mode is to send audio files
 # Function to fetch song suggestion
 def get_song_for_feelings(feeling_description):
     prompt = (f"A user described their feelings as follows: '{feeling_description}'. "
-              f"Suggest a Christian worship song with its artist that matches this situation.*1 only name and by nothing else*")
+              f"Suggest a Christian worship song with its artist that matches this situation. Response should be *[song name] by [artist]* nothing else or extra ")
     response = model.generate_content(prompt)
     return response.text.strip()
 
@@ -34,12 +34,15 @@ def download_audio_from_youtube(search_query):
         'outtmpl': 'downloads/%(title)s.%(ext)s',
         'quiet': True,
         'noplaylist': True,
-        'proxy': '8.219.97.248:80',  # Replace with a free proxy
     }
-    
+
+    invidious_instance = "https://yewtu.be"  # Use an Invidious instance
+    query_url = f"{invidious_instance}/search?q={search_query}"
+
     with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(f"ytsearch:{search_query}", download=True)
+        info = ydl.extract_info(query_url, download=True)
         return ydl.prepare_filename(info['entries'][0]).replace(".webm", ".mp3")
+
 
 
 # Initialize Pyrogram Client
