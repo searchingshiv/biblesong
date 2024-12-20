@@ -5,3 +5,4 @@ ffmpeg-python==0.2.0
 pysocks==1.7.1
 tgcrypto==1.2.2
 pyaes==1.6.1
+pytube 
