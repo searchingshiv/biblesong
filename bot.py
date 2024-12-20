@@ -3,6 +3,8 @@ from pytube import YouTube
 import os
 import time
 from google.generativeai import configure, GenerativeModel
+import requests
+from bs4 import BeautifulSoup
 
 # Bot Configuration
 API_ID = os.getenv("API_ID", "")
@@ -23,16 +25,34 @@ def get_song_for_feelings(feeling_description):
     response = model.generate_content(prompt)
     return response.text.strip()
 
+# Function to fetch YouTube video URL using search
+def get_youtube_url(query):
+    search_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
+    page = requests.get(search_url)
+    soup = BeautifulSoup(page.content, "html.parser")
+    video_id = None
+    
+    for a_tag in soup.find_all("a", href=True):
+        if '/watch?v=' in a_tag['href']:
+            video_id = a_tag['href'].split('v=')[1]
+            break
+    
+    if video_id:
+        return f"https://www.youtube.com/watch?v={video_id}"
+    else:
+        return None
+
 # Function to download audio from YouTube using Pytube
 def download_audio_from_youtube(search_query, retries=3, delay=5):
-    # Construct the search query URL
-    query_url = f"https://www.youtube.com/results?search_query={search_query}"
-    
-    # Attempt to download the first search result for the song
     for attempt in range(retries):
         try:
-            # Search and get the first result
-            yt = YouTube(query_url)
+            # Fetch YouTube video URL using search
+            video_url = get_youtube_url(search_query)
+            
+            if not video_url:
+                raise Exception("Could not find a valid YouTube video for the query.")
+            
+            yt = YouTube(video_url)
             stream = yt.streams.filter(only_audio=True, file_extension="mp4").first()
             
             # Download the audio and save as mp3
