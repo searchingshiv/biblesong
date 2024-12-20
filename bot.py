@@ -3,20 +3,23 @@ from pytube import YouTube
 import os
 import time
 from google.generativeai import configure, GenerativeModel
-import requests
-from bs4 import BeautifulSoup
+from googleapiclient.discovery import build
 
 # Bot Configuration
-API_ID = os.getenv("API_ID", "")
-API_HASH = os.getenv("API_HASH", "")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+API_ID = os.getenv("API_ID", "25833520")
+API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAG13LY43DJnAp51TtlXUlivuuh76lu2H7E")
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")  # Make sure to add your YouTube Data API v3 key
 
 # Initialize Google Generative AI
-configure(api_key=os.getenv("GENAI_KEY", ""))
+configure(api_key=os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4"))
 model = GenerativeModel("gemini-1.5-flash")
 
 # Default Mode (File or VC)
 MODE = "file"  # Default mode is to send audio files
+
+# Initialize YouTube Data API client
+youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 
 # Function to fetch song suggestion
 def get_song_for_feelings(feeling_description):
@@ -25,19 +28,20 @@ def get_song_for_feelings(feeling_description):
     response = model.generate_content(prompt)
     return response.text.strip()
 
-# Function to fetch YouTube video URL using search
-def get_youtube_url(query):
-    search_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
-    page = requests.get(search_url)
-    soup = BeautifulSoup(page.content, "html.parser")
-    video_id = None
-    
-    for a_tag in soup.find_all("a", href=True):
-        if '/watch?v=' in a_tag['href']:
-            video_id = a_tag['href'].split('v=')[1]
-            break
-    
-    if video_id:
+# Function to search for a YouTube video using the YouTube Data API
+def search_youtube_video(query):
+    request = youtube.search().list(
+        part="snippet",
+        q=query,
+        type="video",
+        order="relevance",
+        maxResults=1  # Only fetch the top result
+    )
+    response = request.execute()
+
+    # Check if there are results and return the video URL
+    if "items" in response and len(response["items"]) > 0:
+        video_id = response["items"][0]["id"]["videoId"]
         return f"https://www.youtube.com/watch?v={video_id}"
     else:
         return None
@@ -46,11 +50,11 @@ def get_youtube_url(query):
 def download_audio_from_youtube(search_query, retries=3, delay=5):
     for attempt in range(retries):
         try:
-            # Fetch YouTube video URL using search
-            video_url = get_youtube_url(search_query)
+            # Fetch YouTube video URL using the search function
+            video_url = search_youtube_video(search_query)
             
             if not video_url:
-                raise Exception("Could not find a valid YouTube video for the query.")
+                raise Exception(f"Could not find a valid YouTube video for the query: {search_query}")
             
             yt = YouTube(video_url)
             stream = yt.streams.filter(only_audio=True, file_extension="mp4").first()
