@@ -49,7 +49,7 @@ def start_command(client, message):
     message.reply_text("Hello! Tell me about your feelings or situation, and I'll send you a worship song suggestion.")
 
 # Handle user input for feelings
-@app.on_message(filters.text & ~filters.command)
+@app.on_message(filters.text & ~filters.command())
 def feelings_handler(client, message):
     user_feelings = message.text
     message.reply_text("Let me think of a song for you...")
