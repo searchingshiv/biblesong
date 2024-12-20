@@ -29,21 +29,44 @@ def get_song_for_feelings(feeling_description):
     return response.text.strip()
 
 # Function to search for a YouTube video using the YouTube Data API
+def search_youtube_video(query):
+    try:
+        request = youtube.search().list(
+            part="snippet",
+            q=query,
+            type="video",
+            maxResults=1,
+            order="relevance"
+        )
+        response = request.execute()
+        
+        # Extract video ID
+        if "items" in response and len(response["items"]) > 0:
+            video_id = response["items"][0]["id"]["videoId"]
+            return f"https://www.youtube.com/watch?v={video_id}"
+        else:
+            raise Exception("No video found for the given query.")
+    except Exception as e:
+        raise Exception(f"Error while searching YouTube: {e}")
+
+# Function to download audio from YouTube using Pytube
 def download_audio_from_youtube(search_query, retries=3, delay=5):
     for attempt in range(retries):
         try:
-            # Fetch YouTube video URL
+            # Fetch YouTube video URL using the search function
             video_url = search_youtube_video(search_query)
-            print(f"Found video URL: {video_url}")
-
+            
+            if not video_url:
+                raise Exception(f"Could not find a valid YouTube video for the query: {search_query}")
+            
             yt = YouTube(video_url)
             stream = yt.streams.filter(only_audio=True, file_extension="mp4").first()
-            print(f"Downloading: {yt.title}")
-
-            # Save the audio file
+            
+            # Download the audio and save as mp3
             audio_file = f"downloads/{yt.title}.mp3"
             stream.download(output_path="downloads", filename=yt.title)
             
+            # Convert to mp3 (if necessary)
             os.rename(f"downloads/{yt.title}.mp4", audio_file)
             return audio_file
         except Exception as e:
