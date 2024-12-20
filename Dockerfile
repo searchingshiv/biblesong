@@ -17,9 +17,9 @@ RUN apt-get update && apt-get install -y \
 
 # Install Python dependencies
 COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt \
+RUN && pip install --no-cache-dir -r requirements.txt \
     # && pip install --no-cache-dir git+https://github.com/pytgcalls/pytgcalls.git
+    # pip install --no-cache-dir --upgrade pip \
 
 # Copy project files into the container
 COPY . /app/
