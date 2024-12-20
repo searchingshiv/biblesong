@@ -3,16 +3,17 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pytgcalls import PyTgCalls
 from pytgcalls.types.stream import StreamAudioEnded
-from pytgcalls.types.input_stream import AudioPiped
+from pytgcalls.types.stream import AudioStream
 import yt_dlp
 import google.generativeai as genai
 import os
 import requests
+import threading
 
 # Bot Configurations
-API_ID = "25833520"
-API_HASH = "7d012a6cbfabc2d0436d7a09d8362af7"
-BOT_TOKEN = "7821411247:AAGepURB3e243eeOVDnDk2h6pPPLIO9C2o8"
+API_ID = os.getenv("API_ID", "25833520")
+API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAGepURB3e243eeOVDnDk2h6pPPLIO9C2o8")
 
 # Flask app for Render (to keep alive)
 app = Flask(__name__)
@@ -26,7 +27,7 @@ bot = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 vc_client = PyTgCalls(bot)
 
 # Configure Google Generative AI
-genai.configure(api_key="AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4")
+genai.configure(api_key=os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4"))
 model = genai.GenerativeModel("gemini-1.5-flash")
 
 # Default Mode (File or VC)
@@ -118,7 +119,7 @@ async def respond_to_feeling(client, message: Message):
             download_audio(audio_url, output_file="song.raw")
             await vc_client.join_group_call(
                 chat_id,
-                AudioPiped("song.raw"),
+                AudioStream("song.raw"),
             )
     except Exception as e:
         await message.reply(f"Sorry, I couldn't process your request. Error: {str(e)}")
@@ -129,11 +130,12 @@ async def stream_end_handler(client, update: StreamAudioEnded):
     if os.path.exists("song.raw"):
         os.remove("song.raw")
 
-# Start Flask App and Pyrogram Bot
-if __name__ == "__main__":
-    # Start the bot and voice client in background
-    bot.start()
-    vc_client.start()
-
-    # Start Flask app for Render (required for "no port" issue)
+# Start Flask App and Pyrogram Bot concurrently
+def run_flask():
     app.run(host="0.0.0.0", port=8080)
+
+if __name__ == "__main__":
+    # Run Flask in a separate thread
+    threading.Thread(target=run_flask).start()
+    # Start the bot
+    bot.run()
