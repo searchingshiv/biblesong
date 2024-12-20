@@ -23,7 +23,7 @@ def get_song_for_feelings(feeling_description):
     return response.text.strip()
 
 # Function to download audio from YouTube
-def download_audio_from_youtube(search_query):
+def download_audio_from_youtube(search_query, retries=3, delay=5):
     ydl_opts = {
         'format': 'bestaudio/best',
         'postprocessors': [{
@@ -39,9 +39,17 @@ def download_audio_from_youtube(search_query):
     invidious_instance = "https://yewtu.be"  # Use an Invidious instance
     query_url = f"{invidious_instance}/search?q={search_query}"
 
-    with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(query_url, download=True)
-        return ydl.prepare_filename(info['entries'][0]).replace(".webm", ".mp3")
+    for attempt in range(retries):
+        try:
+            with YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(query_url, download=True)
+                return ydl.prepare_filename(info['entries'][0]).replace(".webm", ".mp3")
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"Error: {e}. Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                raise e
 
 
 
