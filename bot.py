@@ -1,9 +1,8 @@
 from flask import Flask
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from pytgcalls import PyTgCalls
-from pytgcalls.types.stream import StreamAudioEnded
-from pytgcalls.types.stream import AudioStream
+from py_tgcalls import PyTgCalls, StreamType
+from py_tgcalls.types.input_stream import InputAudioStream
 import yt_dlp
 import google.generativeai as genai
 import os
@@ -119,14 +118,15 @@ async def respond_to_feeling(client, message: Message):
             download_audio(audio_url, output_file="song.raw")
             await vc_client.join_group_call(
                 chat_id,
-                AudioStream("song.raw"),
+                InputAudioStream("song.raw"),
+                stream_type=StreamType().local_stream,
             )
     except Exception as e:
         await message.reply(f"Sorry, I couldn't process your request. Error: {str(e)}")
 
 # Cleanup after VC streaming ends
 @vc_client.on_stream_end()
-async def stream_end_handler(client, update: StreamAudioEnded):
+async def stream_end_handler(client, update: StreamType):
     if os.path.exists("song.raw"):
         os.remove("song.raw")
 
