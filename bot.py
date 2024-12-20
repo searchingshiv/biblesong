@@ -1,9 +1,9 @@
 from flask import Flask
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from pytgcalls import GroupCallFactory
-from pytgcalls.types import StreamType
-from pytgcalls.types.input_stream import InputStream, AudioPiped
+from pytgcalls import PyTgCalls
+from pytgcalls.types.stream import StreamAudioEnded
+from pytgcalls.types.input_stream import AudioPiped
 import yt_dlp
 import google.generativeai as genai
 import os
@@ -23,7 +23,7 @@ def index():
 
 # Initialize Pyrogram Bot and PyTgCalls for VC
 bot = Client("music_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
-vc_client = GroupCallFactory(bot).get_group_call()
+vc_client = PyTgCalls(bot)
 
 # Configure Google Generative AI
 genai.configure(api_key="AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4")
@@ -116,17 +116,16 @@ async def respond_to_feeling(client, message: Message):
             # Play in VC mode
             await message.reply(f"Joining the voice chat to play **{title}**...\n\n**Lyrics:**\n{lyrics}")
             download_audio(audio_url, output_file="song.raw")
-            vc_client.join_group_call(
+            await vc_client.join_group_call(
                 chat_id,
                 AudioPiped("song.raw"),
-                stream_type=StreamType().local_stream(),
             )
     except Exception as e:
         await message.reply(f"Sorry, I couldn't process your request. Error: {str(e)}")
 
 # Cleanup after VC streaming ends
 @vc_client.on_stream_end()
-async def stream_end_handler(client, update):
+async def stream_end_handler(client, update: StreamAudioEnded):
     if os.path.exists("song.raw"):
         os.remove("song.raw")
 
