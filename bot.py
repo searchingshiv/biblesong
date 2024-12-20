@@ -49,7 +49,8 @@ def start_command(client, message):
     message.reply_text("Hello! Tell me about your feelings or situation, and I'll send you a worship song suggestion.")
 
 # Handle user input for feelings
-@app.on_message(filters.text & ~filters.command())
+# Handle user input for feelings
+@app.on_message(filters.text & ~filters.command)
 def feelings_handler(client, message):
     user_feelings = message.text
     message.reply_text("Let me think of a song for you...")
@@ -70,6 +71,7 @@ def feelings_handler(client, message):
         os.remove(audio_file)
     except Exception as e:
         message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
+
 
 # Run the bot
 if __name__ == "__main__":
