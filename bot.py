@@ -1,15 +1,16 @@
 from pyrogram import Client, filters
-from yt_dlp import YoutubeDL
+from pytube import YouTube
 import os
+import time
 from google.generativeai import configure, GenerativeModel
 
 # Bot Configuration
-API_ID = os.getenv("API_ID", "25833520")
-API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAG13LY43DJnAp51TtlXUlivuuh76lu2H7E")
+API_ID = os.getenv("API_ID", "")
+API_HASH = os.getenv("API_HASH", "")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 
 # Initialize Google Generative AI
-configure(api_key=os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4"))
+configure(api_key=os.getenv("GENAI_KEY", ""))
 model = GenerativeModel("gemini-1.5-flash")
 
 # Default Mode (File or VC)
@@ -22,35 +23,31 @@ def get_song_for_feelings(feeling_description):
     response = model.generate_content(prompt)
     return response.text.strip()
 
-# Function to download audio from YouTube
+# Function to download audio from YouTube using Pytube
 def download_audio_from_youtube(search_query, retries=3, delay=5):
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-        'outtmpl': 'downloads/%(title)s.%(ext)s',
-        'quiet': True,
-        'noplaylist': True,
-    }
-
-    invidious_instance = "https://yewtu.be"  # Use an Invidious instance
-    query_url = f"{invidious_instance}/search?q={search_query}"
-
+    # Construct the search query URL
+    query_url = f"https://www.youtube.com/results?search_query={search_query}"
+    
+    # Attempt to download the first search result for the song
     for attempt in range(retries):
         try:
-            with YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(query_url, download=True)
-                return ydl.prepare_filename(info['entries'][0]).replace(".webm", ".mp3")
+            # Search and get the first result
+            yt = YouTube(query_url)
+            stream = yt.streams.filter(only_audio=True, file_extension="mp4").first()
+            
+            # Download the audio and save as mp3
+            audio_file = f"downloads/{yt.title}.mp3"
+            stream.download(output_path="downloads", filename=yt.title)
+            
+            # Convert to mp3 (if necessary)
+            os.rename(f"downloads/{yt.title}.mp4", audio_file)
+            return audio_file
         except Exception as e:
             if attempt < retries - 1:
                 print(f"Error: {e}. Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
                 raise e
-
 
 
 # Initialize Pyrogram Client
@@ -61,7 +58,6 @@ app = Client("feelings_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOK
 def start_command(client, message):
     message.reply_text("Hello! Tell me about your feelings or situation, and I'll send you a worship song suggestion.")
 
-# Handle user input for feelings
 # Handle user input for feelings
 @app.on_message(filters.text & ~filters.regex("^/"))
 def feelings_handler(client, message):
@@ -84,7 +80,6 @@ def feelings_handler(client, message):
         os.remove(audio_file)
     except Exception as e:
         message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
-
 
 # Run the bot
 if __name__ == "__main__":
