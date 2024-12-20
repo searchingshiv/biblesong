@@ -50,7 +50,7 @@ def start_command(client, message):
 
 # Handle user input for feelings
 # Handle user input for feelings
-@app.on_message(filters.text & ~filters.command)
+@app.on_message(filters.text & ~filters.regex("^/"))
 def feelings_handler(client, message):
     user_feelings = message.text
     message.reply_text("Let me think of a song for you...")
