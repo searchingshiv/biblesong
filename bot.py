@@ -18,7 +18,7 @@ MODE = "file"  # Default mode is to send audio files
 # Function to fetch song suggestion
 def get_song_for_feelings(feeling_description):
     prompt = (f"A user described their feelings as follows: '{feeling_description}'. "
-              f"Suggest a Christian worship song with its artist that matches this situation."1 only name nothing else"")
+              f"Suggest a Christian worship song with its artist that matches this situation.*1 only name nothing else*")
     response = model.generate_content(prompt)
     return response.text.strip()
 
