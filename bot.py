@@ -30,21 +30,25 @@ def get_song_for_feelings(feeling_description):
 
 # Function to search for a YouTube video using the YouTube Data API
 def search_youtube_video(query):
-    request = youtube.search().list(
-        part="snippet",
-        q=query,
-        type="video",
-        order="relevance",
-        maxResults=1  # Only fetch the top result
-    )
-    response = request.execute()
+    try:
+        request = youtube.search().list(
+            part="snippet",
+            q=query,
+            type="video",
+            maxResults=1,
+            order="relevance"
+        )
+        response = request.execute()
+        
+        # Extract video ID
+        if "items" in response and len(response["items"]) > 0:
+            video_id = response["items"][0]["id"]["videoId"]
+            return f"https://www.youtube.com/watch?v={video_id}"
+        else:
+            raise Exception("No video found for the given query.")
+    except Exception as e:
+        raise Exception(f"Error while searching YouTube: {e}")
 
-    # Check if there are results and return the video URL
-    if "items" in response and len(response["items"]) > 0:
-        video_id = response["items"][0]["id"]["videoId"]
-        return f"https://www.youtube.com/watch?v={video_id}"
-    else:
-        return None
 
 # Function to download audio from YouTube using Pytube
 def download_audio_from_youtube(search_query, retries=3, delay=5):
