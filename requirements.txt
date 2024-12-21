@@ -1,5 +1,4 @@
 pytgcalls==0.0.5
-tgcalls==0.0.3
 pyrogram>=2.0.35
 google-generativeai
 google-api-python-client
