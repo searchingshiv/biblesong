@@ -12,9 +12,10 @@ WORKDIR /app
 # Copy requirements
 COPY requirements.txt ./
 
-# Upgrade pip and install dependencies incrementally
+# Install dependencies
 RUN pip install --upgrade pip setuptools wheel && \
-    pip install pytgcalls==0.0.5 tgcalls==0.0.3 && \
+    pip uninstall -y pytgcalls tgcalls && \
+    pip install pytgcalls==0.0.5 tgcalls==0.0.3 TgCrypto && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
