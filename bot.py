@@ -5,6 +5,7 @@ import os
 import time
 from google.generativeai import configure, GenerativeModel
 from googleapiclient.discovery import build
+from pytube.request import default_range, stream as pt_stream
 
 # Bot Configuration
 API_ID = os.getenv("API_ID", "25833520")
