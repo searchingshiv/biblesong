@@ -4,6 +4,7 @@ import os
 import time
 from google.generativeai import configure, GenerativeModel
 from googleapiclient.discovery import build
+from yt_dlp import YoutubeDL
 
 # Bot Configuration
 API_ID = os.getenv("API_ID", "25833520")
@@ -51,6 +52,19 @@ def search_youtube_video(query):
 
 # Function to download audio from YouTube using Pytube
 def download_audio_from_youtube(search_query, retries=3, delay=5):
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'outtmpl': 'downloads/%(title)s.%(ext)s',
+        'quiet': True,
+        'noplaylist': True,
+        'cookies': 'cookies.txt',  # Use cookies
+    }
+
     for attempt in range(retries):
         try:
             # Fetch YouTube video URL using the search function
@@ -58,25 +72,16 @@ def download_audio_from_youtube(search_query, retries=3, delay=5):
             
             if not video_url:
                 raise Exception(f"Could not find a valid YouTube video for the query: {search_query}")
-            
-            yt = YouTube(video_url)
-            stream = yt.streams.filter(only_audio=True, file_extension="mp4").first()
-            
-            # Download the audio and save as mp3
-            audio_file = f"downloads/{yt.title}.mp3"
-            stream.download(output_path="downloads", filename=yt.title)
-            
-            # Convert to mp3 (if necessary)
-            os.rename(f"downloads/{yt.title}.mp4", audio_file)
-            return audio_file
+
+            with YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(video_url, download=True)
+                return ydl.prepare_filename(info).replace(".webm", ".mp3")
         except Exception as e:
             if attempt < retries - 1:
                 print(f"Error: {e}. Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
                 raise e
-
-
 
 # Function to download audio from YouTube using Pytube
 def download_audio_from_youtube(search_query, retries=3, delay=5):
