@@ -1,27 +1,24 @@
-# Use official Python image
-FROM python:3.11-slim
+FROM python:3.9-slim
 
-# Set the working directory
-WORKDIR /usr/src/app
-
-# Install system dependencies and build tools
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libffi-dev \
-    libssl-dev \
+    gcc \
     ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean
 
-# Install Python dependencies
+# Set working directory
+WORKDIR /app
+
+# Copy requirements
 COPY requirements.txt ./
+
+# Upgrade pip and install dependencies incrementally
 RUN pip install --upgrade pip setuptools wheel && \
+    pip install pytgcalls==0.0.5 tgcalls==0.0.3 && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy bot code
+# Copy project files
 COPY . .
 
-# Expose the port (if needed)
-EXPOSE 8080
-
-# Command to run the bot
-CMD ["python3", "bot.py"]
+# Command to run the app
+CMD ["python", "bot.py"]
