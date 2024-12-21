@@ -9,3 +9,4 @@ pyaes==1.6.1
 pytube 
 beautifulsoup4
 google-api-python-client
+pytgcalls 
