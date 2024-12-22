@@ -79,6 +79,7 @@ def search_youtube_video(query):
         print(f"Error while searching YouTube: {e}")
         raise
 
+
 # Function to download audio from YouTube using Pytube
 def download_audio_from_youtube(search_query, retries=3, delay=5):
     for attempt in range(retries):
