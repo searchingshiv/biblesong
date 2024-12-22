@@ -27,7 +27,7 @@ server_thread.start()
 # Bot Configuration
 API_ID = os.getenv("API_ID", "25833520")
 API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7e")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAG13LY43DJnAp51TtlXUlivuuh76lu2H7E")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 GENAI_KEY = os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4")
 
 # Initialize Google Generative AI
