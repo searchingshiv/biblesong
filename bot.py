@@ -1,9 +1,8 @@
 from pyrogram import Client, filters
-from y2mate import YouTube
+from y2mate import download
 import os
 import time
 from google.generativeai import configure, GenerativeModel
-import requests
 import argparse
 from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
@@ -24,18 +23,17 @@ server_thread = threading.Thread(target=start_fake_server, args=(args.port,))
 server_thread.daemon = True
 server_thread.start()
 
+
+
 # Bot Configuration
 API_ID = os.getenv("API_ID", "25833520")
 API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7e")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAG13LY43DJnAp51TtlXUlivuuh76lu2H7E")
 GENAI_KEY = os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4")
 
 # Initialize Google Generative AI
 configure(api_key=GENAI_KEY)
 model = GenerativeModel("gemini-1.5-flash")
-
-# Initialize Y2Mate
-y2mate = YouTube()
 
 # Function to fetch song suggestion
 def get_song_for_feelings(feeling_description):
@@ -48,7 +46,7 @@ def get_song_for_feelings(feeling_description):
 def search_youtube_video(query):
     try:
         print(f"Searching YouTube for: {query}")
-        search_results = y2mate.search(query, max_results=1)
+        search_results = download.search(query, max_results=1)  # Search method of y2mate
         if search_results:
             video_url = search_results[0]["link"]
             print(f"Found YouTube video: {video_url}")
@@ -68,8 +66,7 @@ def download_audio_from_youtube(search_query, retries=3, delay=5):
             print(f"Video URL: {video_url}")
 
             # Download the video audio using Y2Mate
-            audio_file_path = y2mate.download_audio(video_url)
-
+            audio_file_path = download(video_url)  # Download method of y2mate
             print(f"Audio downloaded and saved as: {audio_file_path}")
             return audio_file_path
         except Exception as e:
