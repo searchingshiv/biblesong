@@ -4,15 +4,26 @@ import os
 import time
 from google.generativeai import configure, GenerativeModel
 from googleapiclient.discovery import build
+import argparse
+from http.server import SimpleHTTPRequestHandler
+from socketserver import TCPServer
+import threading
+
+def start_fake_server(port):
+    handler = SimpleHTTPRequestHandler
+    with TCPServer(("0.0.0.0", port), handler) as httpd:
+        print(f"Fake server running on port {port}")
+        httpd.serve_forever()
+
 
 # Bot Configuration
 API_ID = os.getenv("API_ID", "25833520")
 API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7e")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAG13LY43DJnAp51TtlXUlivuuh76lu2H7E")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")  # Add your YouTube Data API v3 key
 
 # Initialize Google Generative AI
-configure(api_key=os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4"))
+configure(api_key=os.getenv("GENAI_KEY", ""))
 model = GenerativeModel("gemini-1.5-flash")
 
 # Default Mode (File or VC)
@@ -20,6 +31,22 @@ MODE = "file"  # Default mode is to send audio files
 
 # Initialize YouTube Data API client
 youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--port", type=int, help="Port to run the fake server", default=8080)
+args = parser.parse_args()
+
+# Start a fake server in a separate thread
+server_thread = threading.Thread(target=start_fake_server, args=(args.port,))
+server_thread.daemon = True
+server_thread.start()
+
+
+
+
+
 
 # Function to fetch song suggestion
 def get_song_for_feelings(feeling_description):
