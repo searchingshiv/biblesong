@@ -9,8 +9,7 @@ from googleapiclient.discovery import build
 API_ID = os.getenv("API_ID", "25833520")
 API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7e")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAG13LY43DJnAp51TtlXUlivuuh76lu2H7E")
-YOUTUBE_API_KEY = "AIzaSyBhC1R4shukFLtzYXi2zGM4Cs_iJ0vu6Bo"
-# YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")  # Add your YouTube Data API v3 key
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")  # Add your YouTube Data API v3 key
 
 # Initialize Google Generative AI
 configure(api_key=os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4"))
@@ -58,8 +57,8 @@ def download_audio_from_youtube(search_query, retries=3, delay=5):
     for attempt in range(retries):
         try:
             print(f"Attempt {attempt + 1}: Searching and downloading audio for query: {search_query}")
-
             video_url = search_youtube_video(search_query)
+            print(f"Video URL: {video_url}")
             yt = YouTube(video_url)
             stream = yt.streams.filter(only_audio=True, file_extension="mp4").first()
 
@@ -77,6 +76,7 @@ def download_audio_from_youtube(search_query, retries=3, delay=5):
             time.sleep(delay)
             if attempt == retries - 1:
                 raise
+
 
 # Initialize Pyrogram Client
 app = Client("feelings_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
