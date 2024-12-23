@@ -157,14 +157,21 @@ def feelings_handler(client, message):
         audio_file = download_audio_from_youtube(video_url, song_suggestion)
 
         # Upload the downloaded file
-        with open(audio_file + ".mp3", "rb") as f:
-            client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
+        mp3_file_path = audio_file + ".mp3"
+        if os.path.exists(mp3_file_path):
+            with open(mp3_file_path, "rb") as f:
+                client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
 
-        os.remove(audio_file)
+            # Remove the file after sending
+            os.remove(mp3_file_path)
+        else:
+            raise Exception(f"Downloaded file not found: {mp3_file_path}")
+
         progress_message.edit_text("✅ Done! Enjoy the song. 🎧")
 
     except Exception as e:
         progress_message.edit_text(f"❌ Oops! Something went wrong. Error: {str(e)}")
+
 
 # Handle /s <song name>
 @app.on_message(filters.command("s"))
