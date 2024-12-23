@@ -27,8 +27,8 @@ server_thread.daemon = True
 server_thread.start()
 
 # Bot Configuration
-API_ID = os.getenv("API_ID", "25833520")
-API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7e")
+API_ID = os.getenv("API_ID", "")
+API_HASH = os.getenv("API_HASH", "")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
