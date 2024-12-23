@@ -1,54 +1,32 @@
-
 from pyrogram import Client, filters
-from pytube import YouTube, request
+from pytube import YouTube
 import os
 import time
 from google.generativeai import configure, GenerativeModel
 from googleapiclient.discovery import build
-import argparse
-from http.server import SimpleHTTPRequestHandler
-from socketserver import TCPServer
-import threading
-
-def start_fake_server(port):
-    handler = SimpleHTTPRequestHandler
-    with TCPServer(("0.0.0.0", port), handler) as httpd:
-        print(f"Fake server running on port {port}")
-        httpd.serve_forever()
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--port", type=int, help="Port to run the fake server", default=8080)
-args = parser.parse_args()
-
-# Start a fake server in a separate thread
-server_thread = threading.Thread(target=start_fake_server, args=(args.port,))
-server_thread.daemon = True
-server_thread.start()
+from googleapiclient.errors import HttpError
 
 # Bot Configuration
 API_ID = os.getenv("API_ID", "25833520")
 API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAG13LY43DJnAp51TtlXUlivuuh76lu2H7E")
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")  # Make sure to add your YouTube Data API v3 key
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")  # Ensure this is valid and unrestricted
 
 # Initialize Google Generative AI
 configure(api_key=os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4"))
 model = GenerativeModel("gemini-1.5-flash")
 
-# Default Mode (File or VC)
-MODE = "file"  # Default mode is to send audio files
-
-request.default_headers["User-Agent"] = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-)
-
 # Initialize YouTube Data API client
 youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+
+# Create downloads directory if not exists
+os.makedirs("downloads", exist_ok=True)
 
 # Function to fetch song suggestion
 def get_song_for_feelings(feeling_description):
     prompt = (f"A user described their feelings as follows: '{feeling_description}'. "
-              f"Suggest a Christian worship song with its artist that matches this situation. Response should be *[song name] by [artist]* nothing else or extra ")
+              f"Suggest a Christian worship song with its artist that matches this situation. "
+              f"Response should be *[song name] by [artist]*, nothing else.")
     response = model.generate_content(prompt)
     return response.text.strip()
 
@@ -70,9 +48,11 @@ def search_youtube_video(query):
             return f"https://www.youtube.com/watch?v={video_id}"
         else:
             raise Exception("No video found for the given query.")
+    except HttpError as e:
+        error_details = e.content.decode("utf-8")
+        raise Exception(f"YouTube API error: {error_details}")
     except Exception as e:
-        raise Exception(f"Error while searching YouTube: {e}")
-
+        raise Exception(f"Error while searching YouTube: {str(e)}")
 
 # Function to download audio from YouTube using Pytube
 def download_audio_from_youtube(search_query, retries=3, delay=5):
@@ -134,5 +114,4 @@ def feelings_handler(client, message):
 
 # Run the bot
 if __name__ == "__main__":
-    os.makedirs("downloads", exist_ok=True)
     app.run()
