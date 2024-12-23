@@ -48,9 +48,10 @@ def sanitize_filename(filename):
 recent_suggestions = []
 
 def get_song_for_feelings(feeling_description):
-    prompt = (f"A user described their feelings as: '{feeling_description}'. "
+    prompt = (f"A user described their feelings as follows: '{feeling_description}'. "
               f"Suggest a Christian worship song with its artist that matches this situation. "
-              f"Exclude songs from this list: {', '.join(recent_suggestions)}.")
+              f"Exclude songs from this list: {', '.join(recent_suggestions)}. "
+              f"Response should be *[song name] by [artist]*, nothing else.")
     response = model.generate_content(prompt)
     return response.text.strip()
 
