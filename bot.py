@@ -85,17 +85,19 @@ def search_youtube_video(query):
         raise Exception(f"Error while searching YouTube: {str(e)}")
 
 def progress_bar(current, total, prefix="Progress", chat_id=None, message_id=None, client=None):
-    percent = (current / total) * 100
+    percent = (current / total) * 100 if total > 0 else 0
     bar = "=" * int(percent / 5) + "-" * (20 - int(percent / 5))
     progress_text = f"{prefix}: [{bar}] {percent:.1f}%"
 
-    # Send the progress update to the chat
     if chat_id and message_id and client:
-        client.edit_message_text(chat_id, message_id, progress_text)
-    
+        try:
+            client.edit_message_text(chat_id, message_id, progress_text)
+        except Exception as e:
+            print(f"Progress update error: {str(e)}")
+
     return progress_text
 
-# Function to download audio from YouTube using yt_dlp
+
 def download_audio_from_youtube(video_url, search_query, chat_id=None, message_id=None, client=None):
     try:
         sanitized_search_query = sanitize_filename(search_query)
@@ -125,7 +127,6 @@ def download_audio_from_youtube(video_url, search_query, chat_id=None, message_i
         return audio_file
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
-
 
 # Function to clean up the downloads directory (remove old files)
 def clean_downloads_directory():
@@ -165,24 +166,34 @@ def feelings_handler(client, message):
     progress_message = message.reply_text("Let me think of a song for you...")
 
     try:
+        # Fetch a song suggestion
         song_suggestion = get_song_for_feelings(user_feelings)
         message.reply_text(f"I suggest: {song_suggestion}. Let me get the audio for you.")
 
+        # Clean downloads directory
         clean_downloads_directory()
+        
+        # Search for the song on YouTube
         video_url = search_youtube_video(song_suggestion)
 
-        # Start downloading and update progress
-        audio_file = download_audio_from_youtube(video_url, song_suggestion, chat_id=message.chat.id, message_id=progress_message.message_id, client=client)
+        # Start downloading with progress updates
+        audio_file = download_audio_from_youtube(
+            video_url,
+            song_suggestion,
+            chat_id=message.chat.id,
+            message_id=progress_message.message_id,
+            client=client
+        )
 
-        # After downloading, upload the audio
+        # Upload the downloaded file
         with open(audio_file + ".mp3", "rb") as f:
-            upload_message = client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
-            # Sending the upload progress update
-            progress_bar(100, 100, prefix="Uploading", chat_id=message.chat.id, message_id=upload_message.message_id, client=client)
+            client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
 
         os.remove(audio_file)
+
     except Exception as e:
         message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
+
 
 # Handle /s <song name>
 @app.on_message(filters.command("s"))
