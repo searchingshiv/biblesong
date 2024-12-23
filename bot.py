@@ -41,9 +41,6 @@ youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 # Create downloads directory if not exists
 os.makedirs("downloads", exist_ok=True)
 
-
-
-
 # Function to sanitize filenames to avoid issues with special characters
 def sanitize_filename(filename):
     return filename.replace(" ", "_").replace("(", "").replace(")", "").replace(",", "").replace("'", "")
@@ -51,10 +48,7 @@ def sanitize_filename(filename):
 # Function to fetch song suggestion
 recent_suggestions = []
 
-# Function to fetch song suggestion, modified to consider recent suggestions
 def get_song_for_feelings(feeling_description):
-    # Filter out songs that are already in the recent suggestions list
-    # Passing a list of recent songs to the AI model's prompt
     prompt = (f"A user described their feelings as follows: '{feeling_description}'. "
               f"Suggest a Christian worship song with its artist that matches this situation. "
               f"Exclude songs from this list: {', '.join(recent_suggestions)}. "
@@ -62,7 +56,6 @@ def get_song_for_feelings(feeling_description):
     response = model.generate_content(prompt)
     return response.text.strip()
 
-# Function to add the new song to the recent suggestions list
 def add_to_recent_suggestions(song_suggestion):
     if len(recent_suggestions) >= 15:
         recent_suggestions.clear()  # Reset the list once it reaches 15 songs
@@ -102,7 +95,6 @@ def progress_bar(current, total, prefix="Progress", chat_id=None, message_id=Non
     
     return progress_text
 
-
 # Function to download audio from YouTube using yt_dlp
 def download_audio_from_youtube(video_url, search_query, chat_id=None, message_id=None, client=None):
     try:
@@ -126,7 +118,6 @@ def download_audio_from_youtube(video_url, search_query, chat_id=None, message_i
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
 
-
 # Function to clean up the downloads directory (remove old files)
 def clean_downloads_directory():
     for filename in os.listdir("downloads"):
@@ -146,11 +137,8 @@ def start_command(client, message):
 @app.on_message(filters.command("update") & filters.reply)
 def update_cookies_reply(client, message):
     try:
-        # Check if the replied message contains a document
         if message.reply_to_message and message.reply_to_message.document:
             document = message.reply_to_message.document
-
-            # Ensure the file is a .txt file
             if document.file_name.endswith(".txt"):
                 file_path = client.download_media(message=document)
                 os.rename(file_path, "cookies.txt")
@@ -187,7 +175,6 @@ def feelings_handler(client, message):
     except Exception as e:
         message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
 
-
 # Handle /s <song name>
 @app.on_message(filters.command("s"))
 def song_handler(client, message):
@@ -206,7 +193,7 @@ def song_handler(client, message):
     except Exception as e:
         message.reply_text(f"Failed to process song details. Error: {str(e)}")
 
-# Handle /l <YouTube link>
+# Handle /l <YouTube link> with progress bar
 @app.on_message(filters.command("l"))
 def link_handler(client, message):
     try:
@@ -215,12 +202,16 @@ def link_handler(client, message):
             message.reply_text("Please provide a YouTube link after /l.")
             return
 
-        message.reply_text("Downloading your requested song...")
+        # Send initial message
+        progress_message = message.reply_text("Downloading your requested song...")
+
         clean_downloads_directory()
-        audio_file = download_audio_from_youtube(link, "Requested_Song")
+        audio_file = download_audio_from_youtube(link, "Requested_Song", chat_id=message.chat.id, message_id=progress_message.message_id, client=client)
 
         with open(audio_file + ".mp3", "rb") as f:
-            client.send_audio(chat_id=message.chat.id, audio=f, title="Requested Song")
+            upload_message = client.send_audio(chat_id=message.chat.id, audio=f, title="Requested Song")
+            # Update progress during the upload
+            progress_bar(100, 100, prefix="Uploading", chat_id=message.chat.id, message_id=upload_message.message_id, client=client)
 
         os.remove(audio_file)
     except Exception as e:
