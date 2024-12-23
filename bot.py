@@ -29,11 +29,11 @@ server_thread.start()
 # Bot Configuration
 API_ID = os.getenv("API_ID", "25833520")
 API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7e")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAG13LY43DJnAp51TtlXUlivuuh76lu2H7E")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 # Initialize Google Generative AI
-configure(api_key=os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4"))
+configure(api_key=os.getenv("GENAI_KEY", ""))
 model = GenerativeModel("gemini-1.5-flash")
 
 # Initialize YouTube Data API client
@@ -195,23 +195,45 @@ def song_handler(client, message):
 @app.on_message(filters.command("l"))
 def link_handler(client, message):
     try:
+        # Extract the YouTube link from the message
         link = " ".join(message.command[1:])
         if not link:
             message.reply_text("❌ Please provide a YouTube link after /l.")
             return
 
+        # Notify user about the download progress
         progress_message = message.reply_text("🎥 Downloading your requested song...")
 
+        # Fetch the video details for a sanitized title
+        video_id = link.split("v=")[1] if "v=" in link else link.split("/")[-1]
+        video_details = youtube.videos().list(part="snippet", id=video_id).execute()["items"][0]
+        title = video_details["snippet"]["title"]
+        sanitized_title = sanitize_filename(title)
+
+        # Clean downloads directory before downloading
         clean_downloads_directory()
-        audio_file = download_audio_from_youtube(link, "Requested_Song")
 
-        with open(audio_file + ".mp3", "rb") as f:
-            client.send_audio(chat_id=message.chat.id, audio=f, title="Requested Song")
+        # Download the audio using the sanitized title
+        audio_file = download_audio_from_youtube(link, sanitized_title)
 
-        os.remove(audio_file)
+        # Construct the path for the downloaded MP3 file
+        mp3_file_path = audio_file + ".mp3"
+        if os.path.exists(mp3_file_path):
+            # Send the audio file with the sanitized title
+            with open(mp3_file_path, "rb") as f:
+                client.send_audio(chat_id=message.chat.id, audio=f, title=sanitized_title)
+
+            # Remove the file after sending
+            os.remove(mp3_file_path)
+        else:
+            raise Exception(f"Downloaded file not found: {mp3_file_path}")
+
+        # Notify the user upon successful upload
         progress_message.edit_text("✅ Your song is ready! 🎶")
     except Exception as e:
+        # Notify the user about any errors
         message.reply_text(f"❌ Failed to download the song. Error: {str(e)}")
+
 
 # Run the bot
 if __name__ == "__main__":
