@@ -40,7 +40,7 @@ youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 
 # Create downloads directory if not exists
 os.makedirs("downloads", exist_ok=True)
-
+app = Client("feelings_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 # Function to sanitize filenames to avoid issues with special characters
 def sanitize_filename(filename):
     return filename.replace(" ", "_").replace("(", "").replace(")", "").replace(",", "").replace("'", "")
