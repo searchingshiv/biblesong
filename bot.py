@@ -129,8 +129,9 @@ def feelings_handler(client, message):
         clean_downloads_directory()
         audio_file = download_audio_from_youtube(song_suggestion)
 
-        with open(audio_file, "rb") as f:
-            client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
+        with open(audio_file + ".mp3", "rb") as f:
+    client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
+
 
         os.remove(audio_file)
     except Exception as e:
