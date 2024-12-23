@@ -184,8 +184,8 @@ def feelings_handler(client, message):
             progress_bar(100, 100, prefix="Uploading", chat_id=message.chat.id, message_id=upload_message.message_id, client=client)
 
         os.remove(audio_file)
-    # except Exception as e:
-    #     message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
+    except Exception as e:
+        message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
 
 
 # Handle /s <song name>
@@ -223,8 +223,8 @@ def link_handler(client, message):
             client.send_audio(chat_id=message.chat.id, audio=f, title="Requested Song")
 
         os.remove(audio_file)
-    # except Exception as e:
-    #     message.reply_text(f"Failed to download the song. Error: {str(e)}")
+    except Exception as e:
+        message.reply_text(f"Failed to download the song. Error: {str(e)}")
 
 # Run the bot
 if __name__ == "__main__":
