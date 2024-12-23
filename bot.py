@@ -10,7 +10,7 @@ import yt_dlp
 API_ID = os.getenv("API_ID", "25833520")
 API_HASH = os.getenv("API_HASH", "7d012a6cbfabc2d0436d7a09d8362af7")
 BOT_TOKEN = os.getenv("BOT_TOKEN", "7821411247:AAG13LY43DJnAp51TtlXUlivuuh76lu2H7E")
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")  # Ensure this is valid and unrestricted
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 # Initialize Google Generative AI
 configure(api_key=os.getenv("GENAI_KEY", "AIzaSyCsdHIafdTkws9PaPn3jrCzp13pBNqGvT4"))
@@ -24,7 +24,6 @@ os.makedirs("downloads", exist_ok=True)
 
 # Function to sanitize filenames to avoid issues with special characters
 def sanitize_filename(filename):
-    # Replace spaces with underscores and remove special characters
     return filename.replace(" ", "_").replace("(", "").replace(")", "").replace(",", "").replace("'", "")
 
 # Function to fetch song suggestion
@@ -47,7 +46,6 @@ def search_youtube_video(query):
         )
         response = request.execute()
         
-        # Extract video ID
         if "items" in response and len(response["items"]) > 0:
             video_id = response["items"][0]["id"]["videoId"]
             return f"https://www.youtube.com/watch?v={video_id}"
@@ -62,24 +60,20 @@ def search_youtube_video(query):
 # Function to download audio from YouTube using yt_dlp
 def download_audio_from_youtube(search_query):
     try:
-        # Search for the YouTube video
         video_url = search_youtube_video(search_query)
-        # Sanitize the filename before saving
         sanitized_search_query = sanitize_filename(search_query)
         audio_file = f"downloads/{sanitized_search_query}"
         
-        # yt-dlp options
         ydl_opts = {
             "format": "bestaudio/best",
             "outtmpl": audio_file + ".%(ext)s", 
             "postprocessors": [
                 {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"},
             ],
-            "cookiefile": "cookies.txt",  # Path to cookies.txt
+            "cookiefile": "cookies.txt",
             "rm-cache-dir": True, 
         }
         
-        # Download audio
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
         return audio_file
@@ -101,28 +95,36 @@ app = Client("feelings_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOK
 def start_command(client, message):
     message.reply_text("Hello! Tell me about your feelings or situation, and I'll send you a worship song suggestion.")
 
+# Handle document uploads to update cookies.txt
+@app.on_message(filters.document & filters.caption("update cookies"))
+def update_cookies(client, message):
+    try:
+        document = message.document
+        if document.file_name.endswith(".txt"):
+            file_path = client.download_media(message=document)
+            os.rename(file_path, "cookies.txt")
+            message.reply_text("Cookies file updated successfully.")
+        else:
+            message.reply_text("Please upload a valid .txt file.")
+    except Exception as e:
+        message.reply_text(f"Failed to update cookies file. Error: {str(e)}")
+
 # Handle user input for feelings
 @app.on_message(filters.text & ~filters.regex("^/"))
 def feelings_handler(client, message):
     user_feelings = message.text
     message.reply_text("Let me think of a song for you...")
 
-    # Fetch song suggestion
     try:
         song_suggestion = get_song_for_feelings(user_feelings)
         message.reply_text(f"I suggest: {song_suggestion}. Let me get the audio for you.")
 
-        # Clean up the downloads directory before downloading a new file
         clean_downloads_directory()
-
-        # Extract song name and download audio
         audio_file = download_audio_from_youtube(song_suggestion)
 
-        # Send audio file to user
         with open(audio_file, "rb") as f:
             client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
 
-        # Clean up downloaded file
         os.remove(audio_file)
     except Exception as e:
         message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
