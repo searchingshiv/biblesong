@@ -59,7 +59,7 @@ def download_audio_from_youtube(search_query):
     try:
         # Search for the YouTube video
         video_url = search_youtube_video(search_query)
-        audio_file = f"downloads/{search_query.replace(' ', '_')}.mp3"
+        audio_file = f"downloads/{search_query.replace(' ', '_')}"
         
         # yt-dlp options
         ydl_opts = {
