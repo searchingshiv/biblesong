@@ -1,3 +1,4 @@
+
 from pyrogram import Client, filters
 import os
 import time
@@ -99,9 +100,8 @@ def download_audio_from_youtube(video_url, search_query):
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=True)
-            actual_title = sanitize_filename(info.get("title", search_query))
-        return f"downloads/{actual_title}"
+            ydl.download([video_url])
+        return audio_file
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
 
@@ -195,24 +195,16 @@ def link_handler(client, message):
 
         progress_message = message.reply_text("🎥 Downloading your requested song...")
 
-        # Extract the video title
-        video_details = youtube.videos().list(part="snippet", id=link.split("=")[1]).execute()["items"][0]
-        title = video_details["snippet"]["title"]
-
-        # Sanitize title and use for file naming
-        sanitized_title = sanitize_filename(title)
-
         clean_downloads_directory()
-        audio_file = download_audio_from_youtube(link, sanitized_title)
+        audio_file = download_audio_from_youtube(link, "Requested_Song")
 
         with open(audio_file + ".mp3", "rb") as f:
-            client.send_audio(chat_id=message.chat.id, audio=f, title=title)
+            client.send_audio(chat_id=message.chat.id, audio=f, title="Requested Song")
 
-        os.remove(audio_file + ".mp3")
+        os.remove(audio_file)
         progress_message.edit_text("✅ Your song is ready! 🎶")
     except Exception as e:
         message.reply_text(f"❌ Failed to download the song. Error: {str(e)}")
-
 
 # Run the bot
 if __name__ == "__main__":
