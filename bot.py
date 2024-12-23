@@ -65,12 +65,14 @@ def download_audio_from_youtube(search_query):
             "postprocessors": [
                 {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}
             ],
+            "cookiefile": "cookies.txt",  # Path to the exported cookies
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
         return audio_file
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
+
 
 # Initialize Pyrogram Client
 app = Client("feelings_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
