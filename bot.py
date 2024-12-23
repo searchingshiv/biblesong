@@ -139,9 +139,9 @@ def feelings_handler(client, message):
 
 
 
-        os.remove(audio_file)
-    except Exception as e:
-        message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
+    #     os.remove(audio_file)
+    # except Exception as e:
+    #     message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
 
 # Run the bot
 if __name__ == "__main__":
