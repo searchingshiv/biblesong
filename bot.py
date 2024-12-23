@@ -85,17 +85,32 @@ def search_youtube_video(query):
         raise Exception(f"Error while searching YouTube: {str(e)}")
 
 def progress_bar(current, total, prefix="Progress", chat_id=None, id=None, client=None):
-    percent = (current / total) * 100 if total > 0 else 0
+    if total > 0:
+        percent = (current / total) * 100
+    else:
+        percent = 0
+
     bar = "=" * int(percent / 5) + "-" * (20 - int(percent / 5))
     progress_text = f"{prefix}: [{bar}] {percent:.1f}%"
+    
+    # Store the last sent progress for comparison
+    if not hasattr(progress_bar, "last_progress"):
+        progress_bar.last_progress = {}
+    
+    if chat_id not in progress_bar.last_progress:
+        progress_bar.last_progress[chat_id] = ""
 
-    if chat_id and id and client:
+    # Update message only if the text has changed
+    if progress_bar.last_progress[chat_id] != progress_text:
         try:
-            client.edit_message_text(chat_id, id, progress_text)
+            if chat_id and id and client:
+                client.edit_message_text(chat_id, id, progress_text)
+                progress_bar.last_progress[chat_id] = progress_text  # Update last progress
         except Exception as e:
             print(f"Progress update error: {str(e)}")
 
     return progress_text
+
 
 
 def download_audio_from_youtube(video_url, search_query, chat_id=None, id=None, client=None):
