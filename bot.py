@@ -5,6 +5,25 @@ from google.generativeai import configure, GenerativeModel
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import yt_dlp
+import argparse
+from http.server import SimpleHTTPRequestHandler
+from socketserver import TCPServer
+import threading
+
+def start_fake_server(port):
+    handler = SimpleHTTPRequestHandler
+    with TCPServer(("0.0.0.0", port), handler) as httpd:
+        print(f"Fake server running on port {port}")
+        httpd.serve_forever()
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--port", type=int, help="Port to run the fake server", default=8080)
+args = parser.parse_args()
+
+# Start a fake server in a separate thread
+server_thread = threading.Thread(target=start_fake_server, args=(args.port,))
+server_thread.daemon = True
+server_thread.start()
 
 # Bot Configuration
 API_ID = os.getenv("API_ID", "25833520")
@@ -72,14 +91,20 @@ def search_youtube_video(query):
     except Exception as e:
         raise Exception(f"Error while searching YouTube: {str(e)}")
 
-# Function to display download/upload progress
-def progress_bar(current, total, prefix="Progress"): 
+def progress_bar(current, total, prefix="Progress", chat_id=None, message_id=None, client=None):
     percent = (current / total) * 100
     bar = "=" * int(percent / 5) + "-" * (20 - int(percent / 5))
-    return f"{prefix}: [{bar}] {percent:.1f}%"
+    progress_text = f"{prefix}: [{bar}] {percent:.1f}%"
+
+    # Send the progress update to the chat
+    if chat_id and message_id and client:
+        client.edit_message_text(chat_id, message_id, progress_text)
+    
+    return progress_text
+
 
 # Function to download audio from YouTube using yt_dlp
-def download_audio_from_youtube(video_url, search_query):
+def download_audio_from_youtube(video_url, search_query, chat_id=None, message_id=None, client=None):
     try:
         sanitized_search_query = sanitize_filename(search_query)
         audio_file = f"downloads/{sanitized_search_query}"
@@ -92,7 +117,7 @@ def download_audio_from_youtube(video_url, search_query):
             ],
             "cookiefile": "cookies.txt",
             "rm-cache-dir": True, 
-            "progress_hooks": [lambda d: print(progress_bar(d['downloaded_bytes'], d['total_bytes'], prefix="Download"))],
+            "progress_hooks": [lambda d: progress_bar(d['downloaded_bytes'], d['total_bytes'], prefix="Downloading", chat_id=chat_id, message_id=message_id, client=client)],
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -100,6 +125,7 @@ def download_audio_from_youtube(video_url, search_query):
         return audio_file
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
+
 
 # Function to clean up the downloads directory (remove old files)
 def clean_downloads_directory():
@@ -136,11 +162,10 @@ def update_cookies_reply(client, message):
     except Exception as e:
         message.reply_text(f"Failed to update cookies file. Error: {str(e)}")
 
-# Handle user input for feelings
 @app.on_message(filters.text & ~filters.regex("^/"))
 def feelings_handler(client, message):
     user_feelings = message.text
-    message.reply_text("Let me think of a song for you...")
+    progress_message = message.reply_text("Let me think of a song for you...")
 
     try:
         song_suggestion = get_song_for_feelings(user_feelings)
@@ -148,14 +173,20 @@ def feelings_handler(client, message):
 
         clean_downloads_directory()
         video_url = search_youtube_video(song_suggestion)
-        audio_file = download_audio_from_youtube(video_url, song_suggestion)
 
+        # Start downloading and update progress
+        audio_file = download_audio_from_youtube(video_url, song_suggestion, chat_id=message.chat.id, message_id=progress_message.message_id, client=client)
+
+        # After downloading, upload the audio
         with open(audio_file + ".mp3", "rb") as f:
-            client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
+            upload_message = client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
+            # Sending the upload progress update
+            progress_bar(100, 100, prefix="Uploading", chat_id=message.chat.id, message_id=upload_message.message_id, client=client)
 
         os.remove(audio_file)
-    except Exception as e:
-        message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
+    # except Exception as e:
+    #     message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
+
 
 # Handle /s <song name>
 @app.on_message(filters.command("s"))
@@ -192,8 +223,8 @@ def link_handler(client, message):
             client.send_audio(chat_id=message.chat.id, audio=f, title="Requested Song")
 
         os.remove(audio_file)
-    except Exception as e:
-        message.reply_text(f"Failed to download the song. Error: {str(e)}")
+    # except Exception as e:
+    #     message.reply_text(f"Failed to download the song. Error: {str(e)}")
 
 # Run the bot
 if __name__ == "__main__":
