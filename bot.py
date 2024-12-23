@@ -55,6 +55,8 @@ def search_youtube_video(query):
         raise Exception(f"Error while searching YouTube: {str(e)}")
 
 # Function to download audio from YouTube using yt_dlp
+import yt_dlp
+
 def download_audio_from_youtube(search_query):
     try:
         # Search for the YouTube video
@@ -64,7 +66,7 @@ def download_audio_from_youtube(search_query):
         # yt-dlp options
         ydl_opts = {
             "format": "bestaudio/best",
-            "outtmpl": audio_file + ".%(ext)s",  # Dynamically appends the correct file extension
+            "outtmpl": audio_file + ".%(ext)s", 
             "postprocessors": [
                 {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"},
             ],
@@ -74,9 +76,10 @@ def download_audio_from_youtube(search_query):
         # Download audio
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
-        return audio_file + ".mp3"
+        return audio_file
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
+
 
 
 # Initialize Pyrogram Client
