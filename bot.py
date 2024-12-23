@@ -86,21 +86,29 @@ def search_youtube_video(query):
 
 def download_audio_from_youtube(video_url, search_query):
     try:
+        # Ensure sanitized filename is used consistently
         sanitized_search_query = sanitize_filename(search_query)
         audio_file = f"downloads/{sanitized_search_query}"
 
         ydl_opts = {
             "format": "bestaudio/best",
-            "outtmpl": audio_file + ".%(ext)s",
+            "outtmpl": audio_file + ".%(ext)s",  # Always sanitize filenames
             "postprocessors": [
                 {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"},
             ],
             "cookiefile": "cookies.txt",
         }
 
+        # Download the audio
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
-        return audio_file
+
+        # Ensure file existence
+        expected_file = audio_file + ".mp3"
+        if not os.path.exists(expected_file):
+            raise FileNotFoundError(f"Downloaded file not found: {expected_file}")
+
+        return expected_file  # Return the complete filename, including extension
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
 
@@ -183,7 +191,6 @@ def song_handler(client, message):
     except Exception as e:
         message.reply_text(f"❌ Failed to fetch song details. Error: {str(e)}")
 
-# Handle /l <YouTube link>
 @app.on_message(filters.command("l"))
 def link_handler(client, message):
     try:
@@ -192,14 +199,26 @@ def link_handler(client, message):
             message.reply_text("❌ Please provide a YouTube link after /l.")
             return
 
-        progress_message = message.reply_text("🎥 Downloading your requested song...")
+        # Fetch video details for title
+        video_details = youtube.videos().list(part="snippet", id=link.split("=")[1]).execute()
+        title = video_details["items"][0]["snippet"]["title"]
 
+        # Always sanitize the title for consistency
+        sanitized_title = sanitize_filename(title)
+
+        progress_message = message.reply_text(f"🎥 Downloading: {title}...")
+
+        # Clean downloads directory
         clean_downloads_directory()
-        audio_file = download_audio_from_youtube(link, "Requested_Song")
 
+        # Download the audio using the sanitized title
+        audio_file = download_audio_from_youtube(link, sanitized_title)
+
+        # Upload the audio
         with open(audio_file + ".mp3", "rb") as f:
-            client.send_audio(chat_id=message.chat.id, audio=f, title="Requested Song")
+            client.send_audio(chat_id=message.chat.id, audio=f, title=title)
 
+        # Cleanup downloaded file
         os.remove(audio_file)
         progress_message.edit_text("✅ Your song is ready! 🎶")
     except Exception as e:
