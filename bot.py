@@ -64,7 +64,7 @@ def download_audio_from_youtube(search_query):
         # yt-dlp options
         ydl_opts = {
             "format": "bestaudio/best",
-            "outtmpl": audio_file,
+            "outtmpl": audio_file + ".%(ext)s",  # Dynamically appends the correct file extension
             "postprocessors": [
                 {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"},
             ],
@@ -74,7 +74,7 @@ def download_audio_from_youtube(search_query):
         # Download audio
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
-        return audio_file
+        return audio_file + ".mp3"
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
 
