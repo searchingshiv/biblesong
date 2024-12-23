@@ -22,6 +22,11 @@ youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 # Create downloads directory if not exists
 os.makedirs("downloads", exist_ok=True)
 
+# Function to sanitize filenames to avoid issues with special characters
+def sanitize_filename(filename):
+    # Replace spaces with underscores and remove special characters
+    return filename.replace(" ", "_").replace("(", "").replace(")", "").replace(",", "").replace("'", "")
+
 # Function to fetch song suggestion
 def get_song_for_feelings(feeling_description):
     prompt = (f"A user described their feelings as follows: '{feeling_description}'. "
@@ -55,13 +60,13 @@ def search_youtube_video(query):
         raise Exception(f"Error while searching YouTube: {str(e)}")
 
 # Function to download audio from YouTube using yt_dlp
-import yt_dlp
-
 def download_audio_from_youtube(search_query):
     try:
         # Search for the YouTube video
         video_url = search_youtube_video(search_query)
-        audio_file = f"downloads/{search_query.replace(' ', '_')}"
+        # Sanitize the filename before saving
+        sanitized_search_query = sanitize_filename(search_query)
+        audio_file = f"downloads/{sanitized_search_query}"
         
         # yt-dlp options
         ydl_opts = {
@@ -81,7 +86,12 @@ def download_audio_from_youtube(search_query):
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
 
-
+# Function to clean up the downloads directory (remove old files)
+def clean_downloads_directory():
+    for filename in os.listdir("downloads"):
+        file_path = os.path.join("downloads", filename)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
 
 # Initialize Pyrogram Client
 app = Client("feelings_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -101,6 +111,9 @@ def feelings_handler(client, message):
     try:
         song_suggestion = get_song_for_feelings(user_feelings)
         message.reply_text(f"I suggest: {song_suggestion}. Let me get the audio for you.")
+
+        # Clean up the downloads directory before downloading a new file
+        clean_downloads_directory()
 
         # Extract song name and download audio
         audio_file = download_audio_from_youtube(song_suggestion)
