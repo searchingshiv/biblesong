@@ -117,6 +117,7 @@ def update_cookies_reply(client, message):
 
 
 # Handle user input for feelings
+# Handle user input for feelings
 @app.on_message(filters.text & ~filters.regex("^/"))
 def feelings_handler(client, message):
     user_feelings = message.text
@@ -130,7 +131,12 @@ def feelings_handler(client, message):
         audio_file = download_audio_from_youtube(song_suggestion)
 
         with open(audio_file + ".mp3", "rb") as f:
-    client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
+            client.send_audio(chat_id=message.chat.id, audio=f, title=song_suggestion)
+
+        os.remove(audio_file)
+    except Exception as e:
+        message.reply_text(f"Sorry, I couldn't fetch the song for you. Error: {str(e)}")
+
 
 
         os.remove(audio_file)
