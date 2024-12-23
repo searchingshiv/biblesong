@@ -57,16 +57,21 @@ def search_youtube_video(query):
 # Function to download audio from YouTube using yt_dlp
 def download_audio_from_youtube(search_query):
     try:
+        # Search for the YouTube video
         video_url = search_youtube_video(search_query)
         audio_file = f"downloads/{search_query.replace(' ', '_')}.mp3"
+        
+        # yt-dlp options
         ydl_opts = {
             "format": "bestaudio/best",
             "outtmpl": audio_file,
             "postprocessors": [
-                {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}
+                {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"},
             ],
-            "cookiefile": "cookies.txt",  # Path to the exported cookies
+            "cookiefile": "cookies.txt",  # Path to cookies.txt
         }
+        
+        # Download audio
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
         return audio_file
