@@ -143,6 +143,60 @@ def download_audio_from_youtube(video_url, search_query, chat_id=None, id=None, 
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
 
+def upload_progress_bar(current, total, prefix="Uploading", chat_id=None, id=None, client=None):
+    if total > 0:
+        percent = (current / total) * 100
+    else:
+        percent = 0
+
+    bar = "=" * int(percent / 5) + "-" * (20 - int(percent / 5))
+    progress_text = f"{prefix}: [{bar}] {percent:.1f}%"
+    
+    if not hasattr(upload_progress_bar, "last_progress"):
+        upload_progress_bar.last_progress = {}
+
+    if chat_id not in upload_progress_bar.last_progress:
+        upload_progress_bar.last_progress[chat_id] = ""
+
+    if upload_progress_bar.last_progress[chat_id] != progress_text:
+        try:
+            if chat_id and id and client:
+                client.edit_message_text(chat_id, id, progress_text)
+                upload_progress_bar.last_progress[chat_id] = progress_text
+        except Exception as e:
+            print(f"Upload progress update error: {str(e)}")
+
+    return progress_text
+
+@app.on_message(filters.command("l"))
+def link_handler(client, message):
+    try:
+        link = " ".join(message.command[1:])
+        if not link:
+            message.reply_text("Please provide a YouTube link after /l.")
+            return
+
+        progress_message = message.reply_text("Downloading your requested song...")
+
+        clean_downloads_directory()
+        audio_file = download_audio_from_youtube(link, "Requested_Song", chat_id=message.chat.id, id=progress_message.id, client=client)
+
+        with open(audio_file + ".mp3", "rb") as f:
+            upload_message = client.send_audio(
+                chat_id=message.chat.id,
+                audio=f,
+                title="Requested Song",
+                progress=upload_progress_bar,
+                progress_args=(message.chat.id, upload_message.id, client)
+            )
+            # Update progress during the upload
+            upload_progress_bar(100, 100, prefix="Uploading", chat_id=message.chat.id, id=upload_message.id, client=client)
+
+        os.remove(audio_file)
+    except Exception as e:
+        message.reply_text(f"Failed to download the song. Error: {str(e)}")
+
+
 # Function to clean up the downloads directory (remove old files)
 def clean_downloads_directory():
     for filename in os.listdir("downloads"):
@@ -229,28 +283,7 @@ def song_handler(client, message):
         message.reply_text(f"Failed to process song details. Error: {str(e)}")
 
 # Handle /l <YouTube link> with progress bar
-@app.on_message(filters.command("l"))
-def link_handler(client, message):
-    try:
-        link = " ".join(message.command[1:])
-        if not link:
-            message.reply_text("Please provide a YouTube link after /l.")
-            return
 
-        # Send initial message
-        progress_message = message.reply_text("Downloading your requested song...")
-
-        clean_downloads_directory()
-        audio_file = download_audio_from_youtube(link, "Requested_Song", chat_id=message.chat.id, id=progress_message.id, client=client)
-
-        with open(audio_file + ".mp3", "rb") as f:
-            upload_message = client.send_audio(chat_id=message.chat.id, audio=f, title="Requested Song")
-            # Update progress during the upload
-            progress_bar(100, 100, prefix="Uploading", chat_id=message.chat.id, id=upload_message.id, client=client)
-
-        os.remove(audio_file)
-    except Exception as e:
-        message.reply_text(f"Failed to download the song. Error: {str(e)}")
 
 # Run the bot
 if __name__ == "__main__":
