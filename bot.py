@@ -1,10 +1,10 @@
 from pyrogram import Client, filters
-from pytube import YouTube
 import os
 import time
 from google.generativeai import configure, GenerativeModel
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+import yt_dlp
 
 # Bot Configuration
 API_ID = os.getenv("API_ID", "25833520")
@@ -54,32 +54,23 @@ def search_youtube_video(query):
     except Exception as e:
         raise Exception(f"Error while searching YouTube: {str(e)}")
 
-# Function to download audio from YouTube using Pytube
-def download_audio_from_youtube(search_query, retries=3, delay=5):
-    for attempt in range(retries):
-        try:
-            # Fetch YouTube video URL using the search function
-            video_url = search_youtube_video(search_query)
-            
-            if not video_url:
-                raise Exception(f"Could not find a valid YouTube video for the query: {search_query}")
-            
-            yt = YouTube(video_url)
-            stream = yt.streams.filter(only_audio=True, file_extension="mp4").first()
-            
-            # Download the audio and save as mp3
-            audio_file = f"downloads/{yt.title}.mp3"
-            stream.download(output_path="downloads", filename=yt.title)
-            
-            # Convert to mp3 (if necessary)
-            os.rename(f"downloads/{yt.title}.mp4", audio_file)
-            return audio_file
-        except Exception as e:
-            if attempt < retries - 1:
-                print(f"Error: {e}. Retrying in {delay} seconds...")
-                time.sleep(delay)
-            else:
-                raise e
+# Function to download audio from YouTube using yt_dlp
+def download_audio_from_youtube(search_query):
+    try:
+        video_url = search_youtube_video(search_query)
+        audio_file = f"downloads/{search_query.replace(' ', '_')}.mp3"
+        ydl_opts = {
+            "format": "bestaudio/best",
+            "outtmpl": audio_file,
+            "postprocessors": [
+                {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}
+            ],
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+        return audio_file
+    except Exception as e:
+        raise Exception(f"Error downloading audio: {str(e)}")
 
 # Initialize Pyrogram Client
 app = Client("feelings_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
