@@ -108,8 +108,16 @@ def download_audio_from_youtube(video_url, search_query, chat_id=None, message_i
                 {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"},
             ],
             "cookiefile": "cookies.txt",
-            "rm-cache-dir": True, 
-            "progress_hooks": [lambda d: progress_bar(d['downloaded_bytes'], d['total_bytes'], prefix="Downloading", chat_id=chat_id, message_id=message_id, client=client)],
+            "progress_hooks": [
+                lambda d: progress_bar(
+                    d.get("downloaded_bytes", 0),
+                    d.get("total_bytes", 1),
+                    prefix="Downloading",
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    client=client,
+                )
+            ],
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -117,6 +125,7 @@ def download_audio_from_youtube(video_url, search_query, chat_id=None, message_i
         return audio_file
     except Exception as e:
         raise Exception(f"Error downloading audio: {str(e)}")
+
 
 # Function to clean up the downloads directory (remove old files)
 def clean_downloads_directory():
