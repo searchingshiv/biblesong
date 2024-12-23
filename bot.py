@@ -96,7 +96,7 @@ def start_command(client, message):
     message.reply_text("Hello! Tell me about your feelings or situation, and I'll send you a worship song suggestion.")
 
 # Handle document uploads to update cookies.txt
-@app.on_message(filters.document & filters.caption("update cookies"))
+@app.on_message(filters.document & filters.create(lambda _, __, m: m.caption and m.caption.lower() == "update cookies"))
 def update_cookies(client, message):
     try:
         document = message.document
