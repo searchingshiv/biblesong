@@ -22,20 +22,32 @@ youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 # Create downloads directory if not exists
 os.makedirs("downloads", exist_ok=True)
 
-# List to keep track of suggested songs to avoid repetition
-suggested_songs = []
+
+
 
 # Function to sanitize filenames to avoid issues with special characters
 def sanitize_filename(filename):
     return filename.replace(" ", "_").replace("(", "").replace(")", "").replace(",", "").replace("'", "")
 
 # Function to fetch song suggestion
+recent_suggestions = []
+
+# Function to fetch song suggestion, modified to consider recent suggestions
 def get_song_for_feelings(feeling_description):
+    # Filter out songs that are already in the recent suggestions list
+    # Passing a list of recent songs to the AI model's prompt
     prompt = (f"A user described their feelings as follows: '{feeling_description}'. "
               f"Suggest a Christian worship song with its artist that matches this situation. "
+              f"Exclude songs from this list: {', '.join(recent_suggestions)}. "
               f"Response should be *[song name] by [artist]*, nothing else.")
     response = model.generate_content(prompt)
     return response.text.strip()
+
+# Function to add the new song to the recent suggestions list
+def add_to_recent_suggestions(song_suggestion):
+    if len(recent_suggestions) >= 15:
+        recent_suggestions.clear()  # Reset the list once it reaches 15 songs
+    recent_suggestions.append(song_suggestion)
 
 # Function to search for a YouTube video using the YouTube Data API
 def search_youtube_video(query):
@@ -132,11 +144,6 @@ def feelings_handler(client, message):
 
     try:
         song_suggestion = get_song_for_feelings(user_feelings)
-        if song_suggestion in suggested_songs:
-            message.reply_text("I've already suggested this song before. Let me find another one.")
-            return
-        suggested_songs.append(song_suggestion)
-        
         message.reply_text(f"I suggest: {song_suggestion}. Let me get the audio for you.")
 
         clean_downloads_directory()
