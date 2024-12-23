@@ -96,18 +96,25 @@ def start_command(client, message):
     message.reply_text("Hello! Tell me about your feelings or situation, and I'll send you a worship song suggestion.")
 
 # Handle document uploads to update cookies.txt
-@app.on_message(filters.document & filters.create(lambda _, __, m: m.caption and m.caption.lower() == "update cookies"))
-def update_cookies(client, message):
+@app.on_message(filters.command("update") & filters.reply)
+def update_cookies_reply(client, message):
     try:
-        document = message.document
-        if document.file_name.endswith(".txt"):
-            file_path = client.download_media(message=document)
-            os.rename(file_path, "cookies.txt")
-            message.reply_text("Cookies file updated successfully.")
+        # Check if the replied message contains a document
+        if message.reply_to_message and message.reply_to_message.document:
+            document = message.reply_to_message.document
+
+            # Ensure the file is a .txt file
+            if document.file_name.endswith(".txt"):
+                file_path = client.download_media(message=document)
+                os.rename(file_path, "cookies.txt")
+                message.reply_text("Cookies file updated successfully.")
+            else:
+                message.reply_text("The replied file is not a valid .txt file. Please reply to a .txt file.")
         else:
-            message.reply_text("Please upload a valid .txt file.")
+            message.reply_text("Please reply to a valid .txt file with the /update command.")
     except Exception as e:
         message.reply_text(f"Failed to update cookies file. Error: {str(e)}")
+
 
 # Handle user input for feelings
 @app.on_message(filters.text & ~filters.regex("^/"))
