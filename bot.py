@@ -84,21 +84,21 @@ def search_youtube_video(query):
     except Exception as e:
         raise Exception(f"Error while searching YouTube: {str(e)}")
 
-def progress_bar(current, total, prefix="Progress", chat_id=None, message_id=None, client=None):
+def progress_bar(current, total, prefix="Progress", chat_id=None, id=None, client=None):
     percent = (current / total) * 100 if total > 0 else 0
     bar = "=" * int(percent / 5) + "-" * (20 - int(percent / 5))
     progress_text = f"{prefix}: [{bar}] {percent:.1f}%"
 
-    if chat_id and message_id and client:
+    if chat_id and id and client:
         try:
-            client.edit_message_text(chat_id, message_id, progress_text)
+            client.edit_message_text(chat_id, id, progress_text)
         except Exception as e:
             print(f"Progress update error: {str(e)}")
 
     return progress_text
 
 
-def download_audio_from_youtube(video_url, search_query, chat_id=None, message_id=None, client=None):
+def download_audio_from_youtube(video_url, search_query, chat_id=None, id=None, client=None):
     try:
         sanitized_search_query = sanitize_filename(search_query)
         audio_file = f"downloads/{sanitized_search_query}"
@@ -116,7 +116,7 @@ def download_audio_from_youtube(video_url, search_query, chat_id=None, message_i
                     d.get("total_bytes", 1),
                     prefix="Downloading",
                     chat_id=chat_id,
-                    message_id=message_id,
+                    id=id,
                     client=client,
                 )
             ],
@@ -181,7 +181,7 @@ def feelings_handler(client, message):
             video_url,
             song_suggestion,
             chat_id=message.chat.id,
-            message_id=progress_message.message_id,
+            id=progress_message.id,
             client=client
         )
 
@@ -226,12 +226,12 @@ def link_handler(client, message):
         progress_message = message.reply_text("Downloading your requested song...")
 
         clean_downloads_directory()
-        audio_file = download_audio_from_youtube(link, "Requested_Song", chat_id=message.chat.id, message_id=progress_message.message_id, client=client)
+        audio_file = download_audio_from_youtube(link, "Requested_Song", chat_id=message.chat.id, id=progress_message.id, client=client)
 
         with open(audio_file + ".mp3", "rb") as f:
             upload_message = client.send_audio(chat_id=message.chat.id, audio=f, title="Requested Song")
             # Update progress during the upload
-            progress_bar(100, 100, prefix="Uploading", chat_id=message.chat.id, message_id=upload_message.message_id, client=client)
+            progress_bar(100, 100, prefix="Uploading", chat_id=message.chat.id, id=upload_message.id, client=client)
 
         os.remove(audio_file)
     except Exception as e:
