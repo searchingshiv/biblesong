@@ -71,6 +71,7 @@ def download_audio_from_youtube(search_query):
                 {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"},
             ],
             "cookiefile": "cookies.txt",  # Path to cookies.txt
+            "rm-cache-dir": True, 
         }
         
         # Download audio
