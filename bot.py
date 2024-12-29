@@ -125,6 +125,23 @@ app = Client("feelings_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOK
 def start_command(client, message):
     message.reply_text("🌟 Hello! Share your feelings or situation, and I'll suggest worship songs for you. 🙏")
 
+# Handle document uploads to update cookies.txt
+@app.on_message(filters.command("update") & filters.reply)
+def update_cookies_reply(client, message):
+    try:
+        if message.reply_to_message and message.reply_to_message.document:
+            document = message.reply_to_message.document
+            if document.file_name.endswith(".txt"):
+                file_path = client.download_media(message=document)
+                os.rename(file_path, "cookies.txt")
+                message.reply_text("✅ Cookies file updated successfully.")
+            else:
+                message.reply_text("❌ Please reply to a valid .txt file.")
+        else:
+            message.reply_text("❌ Reply to a valid .txt file with the /update command.")
+    except Exception as e:
+        message.reply_text(f"❌ Failed to update cookies file. Error: {str(e)}")
+
 @app.on_message(filters.text & ~filters.regex("^/"))
 def feelings_handler(client, message):
     user_feelings = message.text
@@ -162,6 +179,68 @@ def feelings_handler(client, message):
 
     except Exception as e:
         progress_message.edit_text(f"❌ Oops! Something went wrong. Error: {str(e)}")
+
+# Handle /s <song name>
+@app.on_message(filters.command("s"))
+def song_handler(client, message):
+    try:
+        query = " ".join(message.command[1:])
+        if not query:
+            message.reply_text("❌ Please provide a song name after /s.")
+            return
+
+        video_url = search_youtube_video(query)
+        video_details = youtube.videos().list(part="snippet", id=video_url.split("=")[1]).execute()["items"][0]
+        title = video_details["snippet"]["title"]
+        thumbnail_url = video_details["snippet"]["thumbnails"]["high"]["url"]
+
+        message.reply_photo(photo=thumbnail_url, caption=f"🎵 **Title:** {title}\n🔗 **Link:** {video_url}\nReply with /l <YouTube link> to download this.")
+    except Exception as e:
+        message.reply_text(f"❌ Failed to fetch song details. Error: {str(e)}")
+
+# Handle /l <YouTube link>
+@app.on_message(filters.command("l"))
+def link_handler(client, message):
+    try:
+        # Extract the YouTube link from the message
+        link = " ".join(message.command[1:])
+        if not link:
+            message.reply_text("❌ Please provide a YouTube link after /l.")
+            return
+
+        # Notify user about the download progress
+        progress_message = message.reply_text("🎥 Downloading your requested song...")
+
+        # Fetch the video details for a sanitized title
+        video_id = link.split("v=")[1] if "v=" in link else link.split("/")[-1]
+        video_details = youtube.videos().list(part="snippet", id=video_id).execute()["items"][0]
+        title = video_details["snippet"]["title"]
+        sanitized_title = sanitize_filename(title)
+
+        # Clean downloads directory before downloading
+        clean_downloads_directory()
+
+        # Download the audio using the sanitized title
+        audio_file = download_audio_from_youtube(link, sanitized_title)
+
+        # Construct the path for the downloaded MP3 file
+        mp3_file_path = audio_file + ".mp3"
+        if os.path.exists(mp3_file_path):
+            # Send the audio file with the sanitized title
+            with open(mp3_file_path, "rb") as f:
+                client.send_audio(chat_id=message.chat.id, audio=f, title=sanitized_title)
+
+            # Remove the file after sending
+            os.remove(mp3_file_path)
+        else:
+            raise Exception(f"Downloaded file not found: {mp3_file_path}")
+
+        # Notify the user upon successful upload
+        progress_message.edit_text("✅ Your song is ready! 🎶")
+    except Exception as e:
+        # Notify the user about any errors
+        message.reply_text(f"❌ Failed to download the song. Error: {str(e)}")
+
 
 # Run the bot
 if __name__ == "__main__":
